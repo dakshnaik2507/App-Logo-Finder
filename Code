@@ -1,0 +1,69 @@
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk
+import requests
+from io import BytesIO
+import os
+
+def get_logo():
+    app_name = entry.get().strip().lower()
+    domain = f"{app_name}.com"
+    url = f"https://logo.clearbit.com/{domain}"
+    
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            img_data = response.content
+            img = Image.open(BytesIO(img_data)).resize((150, 150))
+            img_tk = ImageTk.PhotoImage(img)
+
+            label_img.config(image=img_tk)
+            label_img.image = img_tk  # Keep reference
+            download_button.config(state="normal")
+            global current_img_data
+            current_img_data = img_data
+        else:
+            messagebox.showerror("Error", "Logo not found!")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed: {e}")
+
+def download_logo():
+    if current_img_data:
+        app_name = entry.get().strip().lower()
+
+        # Get the current directory where the .py file is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Create subfolder named after the app
+        folder_path = os.path.join(current_dir, app_name)
+
+        # Create the folder if it doesn’t exist
+        os.makedirs(folder_path, exist_ok=True)
+
+        # Final file path
+        file_path = os.path.join(folder_path, f"{app_name}_logo.png")
+
+        with open(file_path, "wb") as f:
+            f.write(current_img_data)
+
+        messagebox.showinfo("Saved", f"Logo saved to:\n{file_path}")
+
+root = tk.Tk()
+root.title("App Logo Finder")
+root.geometry("300x400")
+
+entry = tk.Entry(root, font=("Arial", 14))
+entry.pack(pady=10)
+
+btn = tk.Button(root, text="Get Logo", command=get_logo)
+btn.pack(pady=5)
+
+label_img = tk.Label(root)
+label_img.pack(pady=10)
+
+download_button = tk.Button(root, text="Download Logo", command=download_logo, state="disabled")
+download_button.pack()
+
+current_img_data = None
+
+root.mainloop()
